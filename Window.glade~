@@ -2,6 +2,80 @@
 <!-- Generated with glade 3.16.1 -->
 <interface>
   <requires lib="gtk+" version="3.10"/>
+  <object class="GtkDialog" id="dialog_login">
+    <property name="can_focus">False</property>
+    <property name="type_hint">dialog</property>
+    <child internal-child="vbox">
+      <object class="GtkBox" id="dialog-vbox2">
+        <property name="can_focus">False</property>
+        <property name="orientation">vertical</property>
+        <property name="spacing">2</property>
+        <child internal-child="action_area">
+          <object class="GtkButtonBox" id="dialog-action_area2">
+            <property name="can_focus">False</property>
+            <property name="layout_style">end</property>
+            <child>
+              <object class="GtkButton" id="button_login">
+                <property name="label" translatable="yes">Login</property>
+                <property name="visible">True</property>
+                <property name="can_focus">True</property>
+                <property name="receives_default">True</property>
+                <property name="relief">half</property>
+                <property name="yalign">0.50999999046325684</property>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+                <property name="fill">True</property>
+                <property name="position">0</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkButton" id="button_guest">
+                <property name="label" translatable="yes">Guest</property>
+                <property name="visible">True</property>
+                <property name="can_focus">True</property>
+                <property name="receives_default">True</property>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+                <property name="fill">True</property>
+                <property name="position">1</property>
+              </packing>
+            </child>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">True</property>
+            <property name="pack_type">end</property>
+            <property name="position">0</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkEntry" id="entry1">
+            <property name="visible">True</property>
+            <property name="can_focus">True</property>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">True</property>
+            <property name="position">1</property>
+          </packing>
+        </child>
+      </object>
+    </child>
+  </object>
+  <object class="GtkListStore" id="list_word">
+    <columns>
+      <!-- column-name Word -->
+      <column type="gchararray"/>
+    </columns>
+    <data>
+      <row>
+        <col id="0" translatable="yes">dadfadsfas</col>
+      </row>
+    </data>
+  </object>
+  <object class="GtkTextBuffer" id="text_add_mean"/>
   <object class="GtkDialog" id="dialog_add">
     <property name="can_focus">False</property>
     <property name="type_hint">dialog</property>
@@ -26,12 +100,13 @@
               </packing>
             </child>
             <child>
-              <object class="GtkTextView" id="text_add_mean">
+              <object class="GtkTextView" id="textview_add_mean">
                 <property name="width_request">255</property>
                 <property name="height_request">114</property>
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <property name="wrap_mode">word</property>
+                <property name="buffer">text_add_mean</property>
               </object>
               <packing>
                 <property name="x">88</property>
@@ -109,17 +184,6 @@
         </child>
       </object>
     </child>
-  </object>
-  <object class="GtkListStore" id="list_word">
-    <columns>
-      <!-- column-name Word -->
-      <column type="gchararray"/>
-    </columns>
-    <data>
-      <row>
-        <col id="0" translatable="yes">dadfadsfas</col>
-      </row>
-    </data>
   </object>
   <object class="GtkTextBuffer" id="text_mean"/>
   <object class="GtkWindow" id="window_main">

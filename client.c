@@ -14,7 +14,8 @@
 GtkBuilder *builder; 
 GtkWidget *window;
 GtkWidget *entry_word;
-GtkWidget	*entry_add_word;
+GtkWidget *entry_add_word;
+GtkWidget	*entry_login;
 GtkTextBuffer *text_mean;
 GtkTextBuffer *text_add_mean;
 GtkWidget *tree_word;
@@ -23,7 +24,10 @@ GtkTreeSelection *tree_selection_word;
 GtkWidget *button_add;
 GtkWidget *button_add_accept;
 GtkWidget *button_cancel;
+GtkWidget *button_login;
+GtkWidget *button_guest;
 GtkWidget *dialog_add;
+GtkWidget *dialog_login;
 
 int sockfd;
 struct sockaddr_in servaddr;
@@ -50,7 +54,8 @@ void on_treeview_selection_word_changed(){
     gtk_tree_model_get(model, &iter, 0, &value, -1);
 
 
-    strcpy(sendline, value);
+    strcpy(sendline, "VIEW:");
+    strcat(sendline, value);
     send(sockfd, sendline, strlen(sendline)+1, 0);
 
     if (recv(sockfd, recvline, MAXLINE,0) == 0){
@@ -88,7 +93,8 @@ void on_entry_word_activate(){
 void on_entry_word_insert_text(){
   const gchar *word = gtk_entry_get_text(GTK_ENTRY(entry_word));
   strcpy(sendline,"\0");
-  strcpy(sendline, word);
+  strcpy(sendline, "SEARCH:");
+  strcat(sendline, word);
   send(sockfd, sendline, strlen(sendline)+1, 0);
 
   if (recv(sockfd, recvline, MAXLINE,0) == 0){
@@ -121,9 +127,13 @@ void on_button_add_accept_clicked(){
   gtk_text_buffer_get_start_iter(GTK_TEXT_BUFFER(text_add_mean), &startPos);
   GtkTextIter endPos;
   gtk_text_buffer_get_end_iter(GTK_TEXT_BUFFER(text_add_mean), &endPos);
-  const gchar *word = gtk_text_buffer_get_text(GTK_TEXT_BUFFER(text_add_mean), &startPos, &endPos, FALSE);
+  const gchar *des = gtk_text_buffer_get_text(GTK_TEXT_BUFFER(text_add_mean), &startPos, &endPos, FALSE);
+  const gchar *word = gtk_entry_get_text(GTK_ENTRY(entry_add_word));
   strcpy(sendline,"\0");
-  strcpy(sendline, word);
+  strcpy(sendline, "ADD:");
+  strcat(sendline, word);
+  strcat(sendline, ";");
+  strcat(sendline, des);
   gtk_text_buffer_set_text(GTK_TEXT_BUFFER(text_add_mean),"",-1);
   gtk_entry_set_text(GTK_ENTRY(entry_add_word),"");
   send(sockfd, sendline, strlen(sendline)+1, 0);
@@ -146,12 +156,29 @@ void on_button_cancel_clicked(){
   gtk_dialog_response(GTK_DIALOG(dialog_add), GTK_RESPONSE_NONE);
 }
 
+void on_button_login_clicked(){
+  const gchar* user = gtk_entry_get_text(GTK_ENTRY(entry_login));
+  if (strcmp(user, "admin") == 0) {
+    gtk_entry_set_text(GTK_ENTRY(entry_login), "");
+    gtk_dialog_response(GTK_DIALOG(dialog_login), GTK_RESPONSE_ACCEPT);
+  } else {
+    gtk_entry_set_text(GTK_ENTRY(entry_login), "");
+    gtk_dialog_response(GTK_DIALOG(dialog_login), GTK_RESPONSE_NONE);
+  }
+}
+
+void on_button_guest_clicked(){
+  gtk_widget_hide(button_add);  
+  gtk_dialog_response(GTK_DIALOG(dialog_login), GTK_RESPONSE_DELETE_EVENT);
+}
+
 void on_window_main_destroy()
 {
   gtk_main_quit();
 }
 
-int main(int argc, char **argv) {	
+int main(int argc, char **argv) {
+  gint result;	
   //basic check of the arguments
   //additional checks can be inserted
   if (argc !=2) {
@@ -196,8 +223,29 @@ int main(int argc, char **argv) {
   dialog_add = GTK_WIDGET(gtk_builder_get_object(builder, "dialog_add"));
   text_add_mean = GTK_TEXT_BUFFER(gtk_builder_get_object(builder, "text_add_mean"));
   entry_add_word = GTK_WIDGET(gtk_builder_get_object(builder, "entry_add_word"));
+  dialog_login = GTK_WIDGET(gtk_builder_get_object(builder, "dialog_login"));
+  entry_login = GTK_WIDGET(gtk_builder_get_object(builder, "entry_login"));
+  button_login = GTK_WIDGET(gtk_builder_get_object(builder, "button_login"));
+  button_guest = GTK_WIDGET(gtk_builder_get_object(builder, "button_guest"));
 
   g_object_unref(builder);
+
+  do{
+    gtk_widget_show(dialog_login);
+    result = gtk_dialog_run(GTK_DIALOG(dialog_login));
+    switch(result){
+      case GTK_RESPONSE_ACCEPT:
+        printf("You are admin\n");
+        break;
+      case GTK_RESPONSE_NONE:
+        printf("You aren't admin\n");
+        break;
+      default:
+        printf("Welcome guest\n");
+        break;
+    }
+    gtk_widget_hide(dialog_login);
+  } while(result == GTK_RESPONSE_NONE);
 
   gtk_widget_show(window);             
   gtk_main();
