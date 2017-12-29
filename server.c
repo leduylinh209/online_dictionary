@@ -4,10 +4,17 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <string.h>
+#include <mysql/mysql.h>
 
 #define MAXLINE 4096 /*max text line length*/
 #define SERV_PORT 3000 /*port*/
 #define LISTENQ 8 /*maximum number of client connections */
+
+//ket noi db
+static char *host = "localhost";
+static char *user = "root";
+static char *pass = "matkhau";
+static char *dbname = "dictionary";
 
 int main (int argc, char **argv)
 {
@@ -38,9 +45,32 @@ int main (int argc, char **argv)
 		printf("%s\n","Received request...");
 
 		while ( (n = recv(connfd, buf, MAXLINE,0)) > 0)  {
-			printf("%s","String received from and resent to the client:");
-			puts(buf);
-			send(connfd, buf, n, 0);
+			char* request[2];
+			int i = 0;
+			char* p = strtok(buf, ":");
+			while(p!=NULL){
+				request[i++] = p;
+				p = strtok(NULL, ":");
+			}
+			if (strcmp(request[0], "SEARCH") == 0)
+			{
+				puts("SEARCH");
+				send(connfd, request[1], strlen(request[1]) + 1, 0);
+			} else if (strcmp(request[0], "VIEW") == 0)
+			{
+				puts("VIEW");
+				send(connfd, request[1], strlen(request[1]) + 1, 0);
+			} else if (strcmp(request[0], "ADD") == 0)
+			{
+				puts("ADD");
+				send(connfd, request[1], strlen(request[1]) + 1, 0);
+			}else if (strcmp(request[0], "EDIT") == 0)
+			{
+				puts("EDIT");
+				send(connfd, request[1], strlen(request[1]) + 1, 0);
+			} else{
+				send(connfd, buf, n, 0);
+			}
 		}
 
 		if (n < 0) {

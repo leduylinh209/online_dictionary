@@ -14,20 +14,26 @@
 GtkBuilder *builder; 
 GtkWidget *window;
 GtkWidget *entry_word;
+GtkWidget *entry_edit_word;
 GtkWidget *entry_add_word;
 GtkWidget	*entry_login;
 GtkTextBuffer *text_mean;
 GtkTextBuffer *text_add_mean;
+GtkTextBuffer *text_edit_mean;
 GtkWidget *tree_word;
 GtkListStore *list_word;
 GtkTreeSelection *tree_selection_word;
 GtkWidget *button_add;
+GtkWidget *button_edit;
 GtkWidget *button_add_accept;
 GtkWidget *button_cancel;
 GtkWidget *button_login;
 GtkWidget *button_guest;
 GtkWidget *dialog_add;
 GtkWidget *dialog_login;
+GtkWidget *dialog_edit;
+GtkWidget *button_edit_accept;
+GtkWidget *button_edit_cancel;
 
 int sockfd;
 struct sockaddr_in servaddr;
@@ -52,7 +58,7 @@ void on_treeview_selection_word_changed(){
   if (gtk_tree_selection_get_selected(GTK_TREE_SELECTION(tree_selection_word), &model, &iter))
   {
     gtk_tree_model_get(model, &iter, 0, &value, -1);
-
+    gtk_entry_set_text(GTK_ENTRY(entry_edit_word), value);
 
     strcpy(sendline, "VIEW:");
     strcat(sendline, value);
@@ -156,6 +162,54 @@ void on_button_cancel_clicked(){
   gtk_dialog_response(GTK_DIALOG(dialog_add), GTK_RESPONSE_NONE);
 }
 
+void on_button_edit_clicked(){
+  gtk_widget_show(dialog_edit);
+  gint result = gtk_dialog_run(GTK_DIALOG(dialog_edit));
+  switch(result){
+    case GTK_RESPONSE_ACCEPT:
+      printf("OK\n");
+      break;
+    default:
+      printf("Canceled\n");
+      break;
+  }
+  gtk_widget_hide(dialog_edit);
+}
+
+void on_button_edit_accept_clicked(){
+  GtkTextIter startPos;
+  gtk_text_buffer_get_start_iter(GTK_TEXT_BUFFER(text_edit_mean), &startPos);
+  GtkTextIter endPos;
+  gtk_text_buffer_get_end_iter(GTK_TEXT_BUFFER(text_edit_mean), &endPos);
+  const gchar *des = gtk_text_buffer_get_text(GTK_TEXT_BUFFER(text_edit_mean), &startPos, &endPos, FALSE);
+  const gchar *word = gtk_entry_get_text(GTK_ENTRY(entry_edit_word));
+  strcpy(sendline,"\0");
+  strcpy(sendline, "EDIT:");
+  strcat(sendline, word);
+  strcat(sendline, ";");
+  strcat(sendline, des);
+  gtk_text_buffer_set_text(GTK_TEXT_BUFFER(text_edit_mean),"",-1);
+  gtk_entry_set_text(GTK_ENTRY(entry_edit_word),"");
+  send(sockfd, sendline, strlen(sendline)+1, 0);
+
+  if (recv(sockfd, recvline, MAXLINE,0) == 0){
+  //error: server terminated prematurely
+    perror("The server terminated prematurely"); 
+    exit(4);
+  }
+  char intro[MAXLINE];
+  strcpy(intro, "String received from the server: ");
+  strcat(intro,recvline);
+  gtk_text_buffer_set_text(GTK_TEXT_BUFFER(text_mean), intro, -1);
+  gtk_dialog_response(GTK_DIALOG(dialog_edit), GTK_RESPONSE_ACCEPT);
+}
+
+void on_button_edit_cancel_clicked(){
+  gtk_text_buffer_set_text(GTK_TEXT_BUFFER(text_edit_mean),"",-1);
+  gtk_entry_set_text(GTK_ENTRY(entry_edit_word),"");
+  gtk_dialog_response(GTK_DIALOG(dialog_edit), GTK_RESPONSE_NONE);
+}
+
 void on_button_login_clicked(){
   const gchar* user = gtk_entry_get_text(GTK_ENTRY(entry_login));
   if (strcmp(user, "admin") == 0) {
@@ -214,6 +268,7 @@ int main(int argc, char **argv) {
 
   entry_word = GTK_WIDGET(gtk_builder_get_object(builder, "entry_word"));
   text_mean = GTK_TEXT_BUFFER(gtk_builder_get_object(builder, "text_mean"));
+  text_edit_mean = GTK_TEXT_BUFFER(gtk_builder_get_object(builder, "text_edit_mean"));
   tree_word = GTK_WIDGET(gtk_builder_get_object(builder,"tree_word"));
   list_word = GTK_LIST_STORE(gtk_builder_get_object(builder,"list_word"));
   tree_selection_word = GTK_TREE_SELECTION(gtk_builder_get_object(builder,"treeview_selection_word"));
@@ -226,7 +281,12 @@ int main(int argc, char **argv) {
   dialog_login = GTK_WIDGET(gtk_builder_get_object(builder, "dialog_login"));
   entry_login = GTK_WIDGET(gtk_builder_get_object(builder, "entry_login"));
   button_login = GTK_WIDGET(gtk_builder_get_object(builder, "button_login"));
+  dialog_edit = GTK_WIDGET(gtk_builder_get_object(builder, "dialog_edit"));
   button_guest = GTK_WIDGET(gtk_builder_get_object(builder, "button_guest"));
+  button_edit = GTK_WIDGET(gtk_builder_get_object(builder, "button_edit"));
+  button_edit_accept = GTK_WIDGET(gtk_builder_get_object(builder, "button_edit_accept"));
+  button_edit_cancel = GTK_WIDGET(gtk_builder_get_object(builder, "button_edit_cancel"));
+  entry_edit_word = GTK_WIDGET(gtk_builder_get_object(builder, "entry_edit_word"));
 
   g_object_unref(builder);
 
