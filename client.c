@@ -69,7 +69,7 @@ void on_treeview_selection_word_changed(){
       perror("The server terminated prematurely"); 
       exit(4);
     }
-    strcpy(intro, "String received from the server: ");
+    strcpy(intro, "");
     strcat(intro,recvline);
 
     gtk_text_buffer_set_text(GTK_TEXT_BUFFER(text_mean), intro, -1);
@@ -80,7 +80,8 @@ void on_treeview_selection_word_changed(){
 void on_entry_word_activate(){
   const gchar *word = gtk_entry_get_text(GTK_ENTRY(entry_word));
   strcpy(sendline,"\0");
-  strcpy(sendline, word);
+  strcpy(sendline, "SEARCH:");
+  strcat(sendline, word);
   gtk_entry_set_text(GTK_ENTRY(entry_word),"");
   send(sockfd, sendline, strlen(sendline)+1, 0);
 
@@ -97,6 +98,13 @@ void on_entry_word_activate(){
 }
 
 void on_entry_word_insert_text(){
+  GtkTreeIter iter;
+  GtkTreeModel *model;
+  if (gtk_tree_selection_get_selected(GTK_TREE_SELECTION(tree_selection_word), &model, &iter)){
+    gtk_tree_selection_unselect_iter(GTK_TREE_SELECTION(tree_selection_word), &iter);
+  }
+  // gtk_tree_selection_unselect_all(tree_selection_word);
+  gtk_list_store_clear(list_word);
   const gchar *word = gtk_entry_get_text(GTK_ENTRY(entry_word));
   strcpy(sendline,"\0");
   strcpy(sendline, "SEARCH:");
@@ -108,10 +116,11 @@ void on_entry_word_insert_text(){
     perror("The server terminated prematurely"); 
     exit(4);
   }
-  char intro[MAXLINE];
-  strcpy(intro, "String received from the server: ");
-  strcat(intro,recvline);
-  gtk_text_buffer_set_text(GTK_TEXT_BUFFER(text_mean), intro, -1);
+  char* p = strtok(recvline, " ");
+  while(p!=NULL){
+    add_to_list(p);
+    p = strtok(NULL, " ");
+  }
 }
 
 void on_button_add_clicked(){

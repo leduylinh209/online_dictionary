@@ -2,6 +2,7 @@
 #include <mysql/mysql.h>
 #include <stdlib.h>
 #include <mysql/my_global.h>
+#include <string.h>
 
 //ket noi db
 static char *host = "localhost";
@@ -18,6 +19,7 @@ int main (int argc, char **argv)
 	MYSQL *conn;
 	MYSQL_RES *res;
 	MYSQL_ROW row;
+	char sql[1000];
 
 	conn = mysql_init(NULL);
 
@@ -28,7 +30,18 @@ int main (int argc, char **argv)
 	}
 	else
 	{
-		printf("success\n");
+		strcpy(sql,"SELECT distinct(word) FROM entries WHERE word LIKE \'%");
+		strcat(sql, "mus");
+		strcat(sql, "%\'");
+		if (mysql_query(conn, sql))
+		{
+			exit(1);
+		}
+
+		res = mysql_store_result(conn);
+		while(row = mysql_fetch_row(res)){
+			printf("%s\n", row[0]);
+		}
 	}
 	mysql_close(conn);
 }

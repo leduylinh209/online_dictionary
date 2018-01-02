@@ -5,6 +5,7 @@
 #include <netinet/in.h>
 #include <string.h>
 #include <mysql/mysql.h>
+#include <mysql/my_global.h>
 
 #define MAXLINE 4096 /*max text line length*/
 #define SERV_PORT 3000 /*port*/
@@ -13,8 +14,12 @@
 //ket noi db
 static char *host = "localhost";
 static char *user = "root";
-static char *pass = "matkhau";
+static char *pass = "12345678";
 static char *dbname = "dictionary";
+
+unsigned int port = 3306;
+static char *unix_socket = NULL;
+unsigned int flag = 0;
 
 int main (int argc, char **argv)
 {
@@ -23,6 +28,21 @@ int main (int argc, char **argv)
 	socklen_t clilen;
 	char buf[MAXLINE];
 	struct sockaddr_in cliaddr, servaddr;
+	char buf2[MAXLINE];
+
+	MYSQL *conn;
+	MYSQL_RES *res;
+	MYSQL_ROW row;
+	char sql[MAXLINE];
+
+	conn = mysql_init(NULL);
+
+	//connect databse
+	if (mysql_real_connect(conn, host, user, pass, dbname, port, unix_socket, flag) == NULL)
+	{
+		printf("MySQL client version: %s\n", mysql_get_client_info());
+		exit(1);
+	}
 
 	//creation of the socket
 	listenfd = socket (AF_INET, SOCK_STREAM, 0);
@@ -50,16 +70,51 @@ int main (int argc, char **argv)
 			char* p = strtok(buf, ":");
 			while(p!=NULL){
 				request[i++] = p;
-				p = strtok(NULL, ":");
+				p = strtok(NULL, "\0");
 			}
+			strcpy(buf2, "");
+
 			if (strcmp(request[0], "SEARCH") == 0)
 			{
 				puts("SEARCH");
-				send(connfd, request[1], strlen(request[1]) + 1, 0);
+				
+				strcpy(sql,"SELECT distinct(word) FROM entries WHERE word LIKE \'");
+				strcat(sql, request[1]);
+				strcat(sql, "%\' LIMIT 50");
+
+				if (mysql_query(conn, sql))
+				{
+					exit(1);
+				}
+
+				res = mysql_store_result(conn);
+				while(row = mysql_fetch_row(res)){
+					strcat(buf2, row[0]);
+					strcat(buf2, " ");
+				}
+				//strcat(buf2, "\0");
+
+				send(connfd, buf2, strlen(buf2) + 1, 0);
 			} else if (strcmp(request[0], "VIEW") == 0)
 			{
 				puts("VIEW");
-				send(connfd, request[1], strlen(request[1]) + 1, 0);
+				strcpy(sql,"SELECT distinct(word), definition FROM entries WHERE word = \'");
+				strcat(sql, request[1]);
+				strcat(sql, "\'");
+
+				if (mysql_query(conn, sql))
+				{
+					exit(1);
+				}
+
+				res = mysql_store_result(conn);
+				while(row = mysql_fetch_row(res)){
+					strcat(buf2, row[1]);
+					strcat(buf2, "\n");
+				}
+				//strcat(buf2, "\0");
+
+				send(connfd, buf2, strlen(buf2) + 1, 0);
 			} else if (strcmp(request[0], "ADD") == 0)
 			{
 				puts("ADD");
@@ -82,5 +137,7 @@ int main (int argc, char **argv)
 	}
 //close listening socket
 	close (listenfd); 
+	mysql_close(conn);
+
 }
 
